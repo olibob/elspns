@@ -1,0 +1,7 @@
+--- # Elasticsearch Master playbook
+- hosts: elsfront
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+    - kibana

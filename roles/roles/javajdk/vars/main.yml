@@ -1,0 +1,4 @@
+---
+# vars file for javajdk
+webupd8team_main: "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main"
+webupd8team_main_src: "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main"

@@ -1,0 +1,40 @@
+---
+# tasks file for elasticserver
+- name: Import Elastic GPG Key
+  apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
+
+- name: Add Elastic Repo into source list
+  apt_repository:
+    repo: 'deb http://packages.elastic.co/elasticsearch/{{ elasticsearch_repo_version }}/debian stable main'
+    state: present
+    update_cache: yes
+
+- name: Install Elasticsearch
+  apt: name=elasticsearch state=present update_cache=yes
+  notify: restartELS
+
+# - include: plugins.yml
+
+- name: Change elasticsearch global default setting
+  template: src=elasticsearch-defaults.j2 dest=/etc/default/elasticsearch owner=root group=elasticsearch mode=644
+  notify: restartELS
+
+- name: Install configuration file for els front
+  template: src=elasticsearch-front.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
+  notify: restartELS
+  when: ansible_hostname == "pns-01"
+
+- name: Install configuration file for els-1
+  template: src=elasticsearch-1.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
+  notify: restartELS
+  when: ansible_hostname == "pns-02"
+
+- name: Install configuration file for els-2
+  template: src=elasticsearch-2.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
+  notify: restartELS
+  when: ansible_hostname == "pns-03"
+
+- name: Install configuration file for els-3
+  template: src=elasticsearch-3.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
+  notify: restartELS
+  when: ansible_hostname == "pns-04"

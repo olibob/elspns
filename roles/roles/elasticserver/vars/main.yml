@@ -1,0 +1,12 @@
+---
+# vars file for elasticserver
+# Package
+elasticsearch_repo_version: "2.x"
+# Global configuration
+elsHeapSize: "512m"
+# Configuration
+clusterName: agilepartner
+nodeNameFront: bb-front-els-pp
+nodeName1: bb-back-els1-pp
+nodeName2: bb-back-els2-pp
+nodeName3: bb-back-els3-pp

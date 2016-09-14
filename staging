@@ -1,0 +1,16 @@
+[local]
+localhost
+
+[elsservers]
+bb-back-els1-pp
+bb-back-els2-pp
+bb-back-els3-pp
+
+[elsfront]
+bb-front-els-pp
+
+[elastic]
+bb-front-els-pp
+bb-back-els1-pp
+bb-back-els2-pp
+bb-back-els3-pp

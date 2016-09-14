@@ -1,0 +1,15 @@
+---
+# tasks file for javajdk
+- name: Add Oracle JDK 8 from webupd8team repo
+  apt_repository: repo={{ webupd8team_main }} state=present filename='webupd8team'
+- name: Add Oracle JDK 8 src from webupd8team repo
+  apt_repository: repo={{ webupd8team_main_src }} state=present filename='webupd8team'
+- name: Add GPG key from webupd8team repo
+  apt_key: keyserver=keyserver.ubuntu.com id=EEA14886 state=present
+- name: Accept Oracle JDK 8 license
+  debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' vtype='select' value='true'
+- name: Instal Oracle JDK 8
+  apt: pkg=oracle-java8-installer state=present update_cache=yes
+- command: java -version
+  register: javaVersion
+- debug: var=javaVersion

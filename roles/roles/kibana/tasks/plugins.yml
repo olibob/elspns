@@ -1,0 +1,10 @@
+- shell: if [ -e /opt/kibana/installedPlugins/sense ]; then echo yes; else echo no; fi;
+  register: sense_plugin_installed
+  always_run: true
+
+- name: Install sense plugin
+  shell: bin/kibana plugin --install elastic/sense chdir=/opt/kibana
+  notify: restartKibana
+  when:
+    - sense_plugin_installed.stdout == "no"
+    - ansible_hostname == "pns-01"

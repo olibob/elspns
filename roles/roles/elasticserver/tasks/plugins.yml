@@ -1,0 +1,17 @@
+# - shell: if [ -e /etc/elasticserver/plugins/license ]; then echo yes; else echo no; fi;
+#   register: license_plugin_installed
+#   always_run: true
+#
+# - shell: if [ -e /etc/elasticserver/plugins/marvel-agent ]; then echo yes; else echo no; fi;
+#   register: marvel_agent_plugin_installed
+#   always_run: true
+#
+# - name: Install license plugin
+#   shell: bin/plugin install license chdir=/usr/share/elasticsearch
+#   when: license_plugin_installed.stdout == 'no'
+#   notify: restartELS
+#
+# - name: Install marvel plugin
+#   shell: bin/plugin install marvel-agent chdir=/usr/share/elasticsearch
+#   when: marvel_agent_plugin_installed.stdout == 'no'
+#   notify: restartELS

@@ -1,0 +1,7 @@
+--- # Java JDK Master playbook
+- hosts: elastic
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+    - javajdk

@@ -1,0 +1,16 @@
+[local]
+localhost
+
+[elsservers]
+pns-02
+pns-03
+pns-04
+
+[elsfront]
+pns-01
+
+[elastic]
+pns-01
+pns-02
+pns-03
+pns-04
