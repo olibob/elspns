@@ -84,4 +84,4 @@ elasticsearch.url: "http://{{ ansible_eth0.ipv4.address }}:9200"
 
 #### plugins
 # Sense
-sense.defaultServerUrl: "http://{{ ansible_hostname }}:9200"
+sense.defaultServerUrl: "http://{{ ansible_eth0.ipv4.address }}:9200"
