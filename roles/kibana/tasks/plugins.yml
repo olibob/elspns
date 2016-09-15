@@ -2,9 +2,16 @@
   register: sense_plugin_installed
   always_run: true
 
+- name: Download latest sense plugin
+  get_url:
+    url: https://download.elastic.co/elastic/sense/sense-latest.tar.gz
+    dest: /tmp/sense-latest.tar.gz
+    mode: 644
+
+
 - name: Install sense plugin
-  shell: bin/kibana plugin --install elastic/sense chdir=/opt/kibana
+  shell: bin/kibana plugin --install sense -u file:///tmp/sense-latest.tar.gz chdir=/opt/kibana
   notify: restartKibana
   when:
     - sense_plugin_installed.stdout == "no"
-    - ansible_hostname == "pns-01"
+    - ansible_hostname == "bb-front-els-pp"

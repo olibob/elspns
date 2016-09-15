@@ -3,11 +3,11 @@
 - name: Import Elastic GPG Key
   apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
 
+- name: Add https transport
+  apt: pkg=apt-transport-https state=present update_cache=yes
+
 - name: Add Kibana Repo into source list
-  apt_repository:
-    repo: 'deb https://packages.elastic.co/kibana/{{ kibana_repo_version }}/debian stable main'
-    state: present
-    update_cache: yes
+  apt_repository: repo='deb https://packages.elastic.co/kibana/{{ kibana_repo_version }}/debian stable main' state=present update_cache=yes
 
 - name: Install Kibana
   apt: name=kibana state=present update_cache=yes
