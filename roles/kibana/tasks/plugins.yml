@@ -2,16 +2,32 @@
   register: sense_plugin_installed
   always_run: true
 
+- shell: if [ -e /opt/kibana/installedPlugins/marvel ]; then echo yes; else echo no; fi;
+  register: marvel_plugin_installed
+  always_run: true
+
 - name: Download latest sense plugin
   get_url:
     url: https://download.elastic.co/elastic/sense/sense-latest.tar.gz
     dest: /tmp/sense-latest.tar.gz
     mode: 644
 
+- name: Download latest marvel plugin
+  get_url:
+    url: https://download.elasticsearch.org/elasticsearch/marvel/marvel-2.4.0.tar.gz
+    dest: /tmp/marvel-latest.tar.gz
+    mode: 644
 
 - name: Install sense plugin
   shell: bin/kibana plugin --install sense -u file:///tmp/sense-latest.tar.gz chdir=/opt/kibana
   notify: restartKibana
   when:
     - sense_plugin_installed.stdout == "no"
+    - ansible_hostname == "bb-front-els-pp"
+
+- name: Install marvel plugin
+  shell: bin/kibana plugin --install marvel -u file:///tmp/marvel-latest.tar.gz chdir=/opt/kibana
+  notify: restartKibana
+  when:
+    - marvel_plugin_installed.stdout == "no"
     - ansible_hostname == "bb-front-els-pp"

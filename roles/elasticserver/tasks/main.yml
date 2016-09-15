@@ -13,7 +13,7 @@
   apt: name=elasticsearch state=present update_cache=yes
   notify: restartELS
 
-# - include: plugins.yml
+- include: plugins.yml
 
 - name: Change elasticsearch global default setting
   template: src=elasticsearch-defaults.j2 dest=/etc/default/elasticsearch owner=root group=elasticsearch mode=644
