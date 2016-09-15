@@ -3,5 +3,8 @@
   become: true
   become_user: root
   become_method: sudo
+  environment:
+    http_proxy: http://10.13.4.50:3128
+    https_proxy: http://10.13.4.50:3128
   roles:
     - javajdk
