@@ -51,7 +51,7 @@ node.name: {{ nodeName1 }}
 #
 # Set the bind address to a specific IP (IPv4 or IPv6):
 #
-network.host: {{ ansible_eth1.ipv4.address}}
+network.host: {{ ansible_eth0.ipv4.address}}
 #
 # Set a custom port for HTTP:
 #
@@ -65,7 +65,7 @@ network.host: {{ ansible_eth1.ipv4.address}}
 # Pass an initial list of hosts to perform discovery when new node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-discovery.zen.ping.unicast.hosts: ["pns-01", "pns-03", "pns-04"]
+discovery.zen.ping.unicast.hosts: ["bb-front-els-pp", "bb-back-els2-pp", "bb-back-els3-pp"]
 #
 # Prevent the "split brain" by configuring the majority of nodes (total number of nodes / 2 + 1):
 #

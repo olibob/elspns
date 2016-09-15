@@ -3,7 +3,7 @@
 # Package
 elasticsearch_repo_version: "2.x"
 # Global configuration
-elsHeapSize: "512m"
+elsHeapSize: "4g"
 # Configuration
 clusterName: agilepartner
 nodeNameFront: bb-front-els-pp
