@@ -14,7 +14,7 @@
 
 - name: Download latest marvel plugin
   get_url:
-    url: https://download.elasticsearch.org/elasticsearch/marvel/marvel-2.4.0.tar.gz
+    url: https://download.elasticsearch.org/elasticsearch/marvel/marvel-2.3.5.tar.gz
     dest: /tmp/marvel-latest.tar.gz
     mode: 644
 

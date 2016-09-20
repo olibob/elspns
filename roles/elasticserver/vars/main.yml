@@ -2,6 +2,8 @@
 # vars file for elasticserver
 # Package
 elasticsearch_repo_version: "2.x"
+elsDownloadURL: https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.3.5/elasticsearch-2.3.5.deb
+elsSHA1: 68364056d967f52b76ef88eeccad471b42c94a9e
 # Global configuration
 elsHeapSize: "4g"
 # Configuration

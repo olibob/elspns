@@ -1,8 +1,8 @@
-- shell: if [ -e /etc/elasticserver/plugins/license ]; then echo yes; else echo no; fi;
+- shell: if [ -e /usr/share/elasticsearch/plugins/license ]; then echo yes; else echo no; fi;
   register: license_plugin_installed
   always_run: true
 
-- shell: if [ -e /etc/elasticserver/plugins/marvel-agent ]; then echo yes; else echo no; fi;
+- shell: if [ -e /usr/share/elasticsearch/plugins/marvel-agent ]; then echo yes; else echo no; fi;
   register: marvel_agent_plugin_installed
   always_run: true
 

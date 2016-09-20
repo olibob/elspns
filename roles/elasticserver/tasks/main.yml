@@ -1,17 +1,26 @@
 ---
 # tasks file for elasticserver
-- name: Import Elastic GPG Key
-  apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
+# - name: Import Elastic GPG Key
+#   apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
+#
+# - name: Add Elastic Repo into source list
+#   apt_repository:
+#     repo: 'deb http://packages.elastic.co/elasticsearch/{{ elasticsearch_repo_version }}/debian stable main'
+#     state: present
+#     update_cache: yes
+#
+# - name: Install Elasticsearch
+#   apt: name=elasticsearch state=present update_cache=yes
+#   notify: restartELS
 
-- name: Add Elastic Repo into source list
-  apt_repository:
-    repo: 'deb http://packages.elastic.co/elasticsearch/{{ elasticsearch_repo_version }}/debian stable main'
-    state: present
-    update_cache: yes
+- name: Download Elasticsearch
+  get_url:
+    url: "{{ elsDownloadURL }}"
+    dest: /tmp/els.deb
+    checksum: "sha1:{{ elsSHA1 }}"
 
 - name: Install Elasticsearch
-  apt: name=elasticsearch state=present update_cache=yes
-  notify: restartELS
+  apt: deb=/tmp/els.deb
 
 - include: plugins.yml
 
