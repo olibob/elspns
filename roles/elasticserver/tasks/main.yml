@@ -22,10 +22,28 @@
 - name: Install Elasticsearch
   apt: deb=/tmp/els.deb
 
-- include: plugins.yml
+#- include: plugins.yml
 
-- name: Change elasticsearch global default setting
-  template: src=elasticsearch-defaults.j2 dest=/etc/default/elasticsearch owner=root group=elasticsearch mode=644
+- name: Change /etc/sysctl.conf
+  blockinfile:
+    dest: /etc/sysctl.conf
+    block: |
+      # hybrid mmapfs / niofs
+      vm.max_map_count=262144
+      # Use RAM and avoid swap
+      vm.swappiness=1
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+  notify: restartELS
+
+- name: Install configuration for jvm options
+  template: src=jvm.options.j2 dest=/etc/elasticsearch/jvm.options owner=root group=elasticsearch mode=750
+  notify: restartELS
+
+- name: Create systemd override directory for ELS service
+  file: path=/etc/systemd/system/elasticsearch.service.d state=directory owner=root group=root mode=755
+
+- name: Override elasticsearch systemd configuration
+  template: src=elasticsearchSystemd.conf.j2 dest=/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf owner=root group=elasticsearch mode=644
   notify: restartELS
 
 - name: Install configuration file for els front

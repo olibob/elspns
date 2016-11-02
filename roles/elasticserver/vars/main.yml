@@ -2,8 +2,8 @@
 # vars file for elasticserver
 # Package
 elasticsearch_repo_version: "2.x"
-elsDownloadURL: https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.3.5/elasticsearch-2.3.5.deb
-elsSHA1: 68364056d967f52b76ef88eeccad471b42c94a9e
+elsDownloadURL: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.0.0.deb
+elsSHA1: c4cac535f834f42676b182462120e5ffd69db513
 # Global configuration
 elsHeapSize: "4g"
 # Configuration
@@ -12,3 +12,8 @@ nodeNameFront: bb-front-els-pp
 nodeName1: bb-back-els1-pp
 nodeName2: bb-back-els2-pp
 nodeName3: bb-back-els3-pp
+nodeIPFront: 10.13.50.199
+nodeIP1: 10.13.50.132
+nodeIP2: 10.13.50.133
+nodeIP3: 10.13.50.134
+splitBrainCount: 2
