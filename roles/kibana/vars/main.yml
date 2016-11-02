@@ -1,3 +1,8 @@
 ---
 # vars file for kibana
-kibana_repo_version: "4.5"
+kibanaDownloadURL: https://artifacts.elastic.co/downloads/kibana/kibana-5.0.0-amd64.deb
+kibanaSHA1: a3828a255ad304167371de7568895a3f69023257
+serverHost: 10.13.50.199
+serverName: bb-front-els-pp
+serverPort: 8080
+elsURL: http://bb-front-els-pp:9200
