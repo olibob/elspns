@@ -1,5 +1,4 @@
----
-# tasks file for kibana
+--- # tasks file for kibana
 - name: Download Kibana
   get_url:
     url: "{{ kibanaDownloadURL }}"
@@ -9,6 +8,9 @@
 - name: Install Elasticsearch
   apt: deb=/tmp/kibana.deb
   notify: restartKibana
+
+- name: Remove temporary kibana package file
+  file: path=/tmp/kibana.deb state=absent
 
 - name: Install configuration
   template: src=kibana.yml.j2 dest=/etc/kibana/kibana.yml owner=root group=root mode=644
