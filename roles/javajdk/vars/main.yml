@@ -1,4 +1,4 @@
----
-# vars file for javajdk
-webupd8team_main: "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main"
-webupd8team_main_src: "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main"
+--- # vars file for javajdk
+jdkDownloadURL: http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz
+jdkName: jdk1.8.0_112
+jdkPriority: 100

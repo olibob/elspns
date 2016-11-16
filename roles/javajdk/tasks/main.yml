@@ -1,15 +1,29 @@
----
-# tasks file for javajdk
-- name: Add Oracle JDK 8 from webupd8team repo
-  apt_repository: repo={{ webupd8team_main }} state=present filename='webupd8team'
-- name: Add Oracle JDK 8 src from webupd8team repo
-  apt_repository: repo={{ webupd8team_main_src }} state=present filename='webupd8team'
-- name: Add GPG key from webupd8team repo
-  apt_key: keyserver=hkp://keyserver.ubuntu.com:80 id=EEA14886 state=present
-- name: Accept Oracle JDK 8 license
-  debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' vtype='select' value='true'
-- name: Instal Oracle JDK 8
-  apt: pkg=oracle-java8-installer state=present update_cache=yes
-- command: java -version
-  register: javaVersion
-- debug: var=javaVersion
+--- # tasks file for javajdk
+- name: Check if JDK is already installed
+  shell: "if [ -d '/opt/jdk1.8.0_112' ]; then echo true; else echo false; fi"
+  register: isInstalled
+
+- name: Debug
+  debug:
+    msg: "JDK is installed?: {{ isInstalled.stdout }}"
+
+- name: Download JDK
+  get_url:
+    url: "{{ jdkDownloadURL }}"
+    dest: /tmp/jdkName.tar.gz
+    headers: 'Cookie: oraclelicense=accept-securebackup-cookie'
+  when: isInstalled.stdout == "false"
+
+- name: Extract archive
+  shell: "tar xzf /tmp/{{ jdkName }}.tar.gz"
+  args:
+    chdir: /opt
+  when: isInstalled.stdout == "false"
+
+- name: Remove temporary jdk archive
+  file: path=/tmp/jdkName.tar.gz state=absent
+  when: isInstalled.stdout == "false"
+
+- name: Set JDK
+  shell: "update-alternatives --install /usr/bin/java java /opt/jdk1.8.0_112/bin/java {{ jdkPriority }}; update-alternatives --install /usr/bin/javac javac /opt/jdk1.8.0_112/bin/javac  {{ jdkPriority }}"
+  when: isInstalled.stdout == "false"
