@@ -1,7 +1,6 @@
 ---
 # vars file for elasticserver
 # Package
-elasticsearch_repo_version: "2.x"
 elsDownloadURL: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.0.0.deb
 elsSHA1: c4cac535f834f42676b182462120e5ffd69db513
 # Global configuration

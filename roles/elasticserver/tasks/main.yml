@@ -1,18 +1,4 @@
 ---
-# tasks file for elasticserver
-# - name: Import Elastic GPG Key
-#   apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
-#
-# - name: Add Elastic Repo into source list
-#   apt_repository:
-#     repo: 'deb http://packages.elastic.co/elasticsearch/{{ elasticsearch_repo_version }}/debian stable main'
-#     state: present
-#     update_cache: yes
-#
-# - name: Install Elasticsearch
-#   apt: name=elasticsearch state=present update_cache=yes
-#   notify: restartELS
-
 - name: Download Elasticsearch
   get_url:
     url: "{{ elsDownloadURL }}"
@@ -22,7 +8,8 @@
 - name: Install Elasticsearch
   apt: deb=/tmp/els.deb
 
-#- include: plugins.yml
+- name: Remove temporary elasticsearch package file
+  file: path=/tmp/els.deb state=absent
 
 - name: Change /etc/sysctl.conf
   blockinfile:
@@ -32,6 +19,11 @@
       vm.max_map_count=262144
       # Use RAM and avoid swap
       vm.swappiness=1
+      # Keepalive settings to avoid disconnects from firewalls
+      # or network latencies
+      net.ipv4.tcp_keepalive_time=600
+      net.ipv4.tcp_keepalive_intvl=60
+      net.ipv4.tcp_keepalive_probes=3
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: restartELS
 
