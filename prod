@@ -1,0 +1,16 @@
+[local]
+localhost
+
+[elsservers]
+bb-back-els1
+bb-back-els2
+bb-back-els3
+
+[elsfront]
+bb-front-els
+
+[elastic]
+bb-front-els
+bb-back-els1
+bb-back-els2
+bb-back-els3
