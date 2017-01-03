@@ -1,18 +1,10 @@
 ---
 # vars file for elasticserver
 # Package
-elsDownloadURL: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.0.0.deb
-elsSHA1: c4cac535f834f42676b182462120e5ffd69db513
+elsDownloadURL: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.1.1.deb
+elsSHA1: f2fdf6d2bdd6e526c5be53f859c4dd111677a4b6
 # Global configuration
 elsHeapSize: "4g"
 # Configuration
 clusterName: agilepartner
-nodeNameFront: bb-front-els-pp
-nodeName1: bb-back-els1-pp
-nodeName2: bb-back-els2-pp
-nodeName3: bb-back-els3-pp
-nodeIPFront: 10.13.50.199
-nodeIP1: 10.13.50.132
-nodeIP2: 10.13.50.133
-nodeIP3: 10.13.50.134
 splitBrainCount: 2

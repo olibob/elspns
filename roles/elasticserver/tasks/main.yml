@@ -41,19 +41,19 @@
 - name: Install configuration file for els front
   template: src=elasticsearch-front.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "bb-front-els-pp"
+  when: (ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")
 
 - name: Install configuration file for els-1
   template: src=elasticsearch-1.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "bb-back-els1-pp"
+  when: (ansible_hostname == "bb-back-els1-pp") or (ansible_hostname == "bb-back-els1")
 
 - name: Install configuration file for els-2
   template: src=elasticsearch-2.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "bb-back-els2-pp"
+  when: (ansible_hostname == "bb-back-els2-pp") or (ansible_hostname == "bb-back-els2")
 
 - name: Install configuration file for els-3
   template: src=elasticsearch-3.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "bb-back-els3-pp"
+  when: (ansible_hostname == "bb-back-els3-pp") or (ansible_hostname == "bb-back-els3")
