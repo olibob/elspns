@@ -5,7 +5,7 @@
     dest: /tmp/kibana.deb
     checksum: "sha1:{{ kibanaSHA1 }}"
 
-- name: Install Elasticsearch
+- name: Install Kibana
   apt: deb=/tmp/kibana.deb
   notify: restartKibana
 
