@@ -9,8 +9,16 @@ bb-back-els3-pp
 [elsfront]
 bb-front-els-pp
 
-[elastic]
-bb-front-els-pp
-bb-back-els1-pp
-bb-back-els2-pp
-bb-back-els3-pp
+[elastic:children]
+elsfront
+elsservers
+
+[elastic:vars]
+nodeNameFront=bb-front-els-pp
+nodeIPFront=10.13.50.199
+nodeName1=bb-back-els1-pp
+nodeIP1=10.13.50.132
+nodeName2=bb-back-els2-pp
+nodeIP2=10.13.50.133
+nodeName3=bb-back-els3-pp
+nodeIP3=10.13.50.134
