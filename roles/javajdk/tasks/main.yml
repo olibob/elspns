@@ -10,7 +10,7 @@
 - name: Download JDK
   get_url:
     url: "{{ jdkDownloadURL }}"
-    dest: /tmp/jdkName.tar.gz
+    dest: /tmp/{{ jdkName }}.tar.gz
     headers: 'Cookie: oraclelicense=accept-securebackup-cookie'
   when: isInstalled.stdout == "false"
 
@@ -21,7 +21,7 @@
   when: isInstalled.stdout == "false"
 
 - name: Remove temporary jdk archive
-  file: path=/tmp/jdkName.tar.gz state=absent
+  file: path=/tmp/{{ jdkName }}.tar.gz state=absent
   when: isInstalled.stdout == "false"
 
 - name: Set JDK
