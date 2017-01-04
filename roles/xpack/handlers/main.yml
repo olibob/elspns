@@ -1,0 +1,6 @@
+---
+- name: restartELS
+  service: name=elasticsearch state=restarted enabled=yes
+
+- name: restartKibana
+  service: name=kibana state=restarted enabled=yes
