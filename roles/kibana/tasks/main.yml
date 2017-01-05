@@ -1,16 +1,26 @@
 --- # tasks file for kibana
+- name: Check if Kibana is allready installed
+  command: >
+    test -e /etc/kibana/kibana.yml
+  register: kibanaInstalled
+  ignore_errors: yes
+  changed_when: kibanaInstalled.rc != 0
+
 - name: Download Kibana
   get_url:
     url: "{{ kibanaDownloadURL }}"
     dest: /tmp/kibana.deb
     checksum: "sha1:{{ kibanaSHA1 }}"
+  when:  kibanaInstalled.rc != 0
 
 - name: Install Kibana
   apt: deb=/tmp/kibana.deb
   notify: restartKibana
+  when:  kibanaInstalled.rc != 0
 
 - name: Remove temporary kibana package file
   file: path=/tmp/kibana.deb state=absent
+  when:  kibanaInstalled.rc != 0
 
 - name: Install configuration
   template: src=kibana.yml.j2 dest=/etc/kibana/kibana.yml owner=root group=root mode=644
