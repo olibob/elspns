@@ -6,5 +6,6 @@ elsSHA1: f2fdf6d2bdd6e526c5be53f859c4dd111677a4b6
 # Global configuration
 elsHeapSize: "4g"
 # Configuration
+elsConf: /etc/elasticsearch
 clusterName: agilepartner
 splitBrainCount: 2
