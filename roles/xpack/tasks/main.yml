@@ -77,6 +77,12 @@
     flat: yes
   when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
 
+- name: Remove temporary system key (for fetch)
+  file:
+    path: /tmp/system_key
+    status: absent
+  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
+
 - name: Enable message authentication (replicate system key)
   copy:
     src: /tmp/system_key
