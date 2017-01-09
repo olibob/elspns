@@ -4,3 +4,4 @@ xpackSHA1: 79845ff4a87cf46391ab3ca1a876ca5403ab7ce9
 elsHome: /usr/share/elasticsearch
 elsConf: /etc/elasticsearch
 kibanaHome: /usr/share/kibana
+kibanaConf: /etc/kibana
