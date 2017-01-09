@@ -1,27 +1,32 @@
 ---
 #TODO: restart services as applicable (notify)
-- name: Check if Xpack is allready installed
+- name: Check if Xpack is allready installed for elasticsearch
   command: "{{ elsHome }}/bin/elasticsearch-plugin list"
-  register: xpackInstalled
-  changed_when: xpackInstalled.rc != 0
+  register: xpackInstalledELS
+  changed_when: xpackInstalledELS.rc != 0
+
+- name: Check if Xpack is allready installed for kibana
+  command: "{{ kibanaHome }}/bin/kibana-plugin list"
+  register: xpackInstalledKibana
+  changed_when: xpackInstalledKibana.rc != 0
+  when: ansible_hostname == "{{ nodeNameFront }}"
 
 - debug:
-    msg: "Xpack is already installed"
-  when: xpackInstalled.stdout.find('x-pack') != -1
+    var: xpackInstalledKibana
 
 - name: Download Xpack
   get_url:
     url: "{{ xpackDownloadURL }}"
     dest: /tmp/xpack.zip
     checksum: "sha1:{{ xpackSHA1 }}"
-  when: xpackInstalled.stdout.find('x-pack') == -1
+  when: xpackInstalledELS.stdout.find('x-pack') == -1 or ( ansible_hostname == "{{ nodeNameFront }}" and xpackInstalledKibana.stdout.find('x-pack'))
 
 - name: Install Elasticsearch Xpack Plugin
   command: "{{ elsHome }}/bin/elasticsearch-plugin install -b file:///tmp/xpack.zip"
   register: xpackElsState
   failed_when: "'ERROR' in xpackElsState.stdout"
   changed_when: xpackElsState.rc == 0
-  when: xpackInstalled.stdout.find('x-pack') == -1
+  when: xpackInstalledELS.stdout.find('x-pack') == -1
   notify: restartELS
 
 - name: Install Kibana Xpack Plugin
@@ -30,7 +35,7 @@
   failed_when: "'ERROR' in xpackKibanaState.stdout"
   changed_when: xpackKibanaState.rc == 0
   notify: restartKibana
-  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and (xpackInstalled.stdout.find('x-pack') == -1)
+  when: ansible_hostname == "{{ nodeNameFront }}" and xpackInstalledELS.stdout.find('x-pack') == -1
 
 - name: Remove temporary xpack package file
   file: path=/tmp/xpack.zip state=absent
@@ -59,8 +64,7 @@
 
 - name: Generating system key for message authentication
   command: "{{ elsHome }}/bin/x-pack/syskeygen"
-  notify: restartELS
-  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
 
 - name: Modifying system key permissions and ownership
   file:
@@ -68,20 +72,20 @@
     owner: root
     group: elasticsearch
     mode: 0660
-  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
 
 - name: Fetch system key
   fetch:
     src: "{{ elsConf }}/x-pack/system_key"
     dest: /tmp/system_key
     flat: yes
-  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
 
 - name: Remove temporary system key (for fetch)
   file:
     path: /tmp/system_key
-    status: absent
-  when: ((ansible_hostname == "bb-front-els-pp") or (ansible_hostname == "bb-front-els")) and  (sysKeyPresent.rc != 0)
+    state: absent
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
 
 - name: Enable message authentication (replicate system key)
   copy:
@@ -90,4 +94,5 @@
     owner: root
     group: elasticsearch
     mode: 0660
-  when: ((ansible_hostname != "bb-front-els-pp") or (ansible_hostname != "bb-front-els")) and  (sysKeyPresent.rc != 0)
+  notify: restartELS
+  when: ansible_hostname != "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
