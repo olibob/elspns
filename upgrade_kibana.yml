@@ -1,0 +1,33 @@
+--- # Elasticsearch Upgrade Node
+- hosts: pns-01
+  vars:
+    kibanaDownloadURL: https://artifacts.elastic.co/downloads/kibana/kibana-5.1.1-amd64.deb
+    kibanaSHA1: 3347b9fa181f63ddc3cf5eb2bf288f932e072cfe
+  become: true
+  become_user: root
+  become_method: sudo
+  # environment:
+  #   http_proxy: http://10.13.4.50:3128
+  #   https_proxy: http://10.13.4.50:3128
+  tasks:
+    - name: Restart Kibana
+      service:
+        name: kibana
+        state: stopped
+
+    - name: Download Kibana
+      get_url:
+        url: "{{ kibanaDownloadURL }}"
+        dest: /tmp/kibana.deb
+        checksum: "sha1:{{ kibanaSHA1 }}"
+
+    - name: Install Kibana
+      apt: deb=/tmp/kibana.deb
+
+    - name: Remove temporary kibana package file
+      file: path=/tmp/kibana.deb state=absent
+
+    - name: Restart Kibana
+      service:
+        name: kibana
+        state: restarted
