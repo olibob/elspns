@@ -1,1 +1,4 @@
 *.retry
+roles/nginx*
+lpns
+xpackCerts*
