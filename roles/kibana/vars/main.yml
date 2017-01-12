@@ -1,3 +1,8 @@
 ---
 # vars file for kibana
-kibana_repo_version: "4.6"
+kibanaDownloadURL: https://artifacts.elastic.co/downloads/kibana/kibana-5.1.1-amd64.deb
+kibanaSHA1: 3347b9fa181f63ddc3cf5eb2bf288f932e072cfe
+serverHost: "{{ nodeIPFront }}"
+serverName: "{{ nodeNameFront }}"
+serverPort: 8080
+elsURL: http://{{ nodeNameFront }}:9200

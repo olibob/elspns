@@ -1,40 +1,69 @@
 ---
-# tasks file for elasticserver
-- name: Import Elastic GPG Key
-  apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
+- name: Check is Elasticsearch is allready installed
+  command: >
+    test -e {{ elsConf }}/elasticsearch.yml
+  register: elsInstalled
+  ignore_errors: yes
+  changed_when: elsInstalled.rc != 0
 
-- name: Add Elastic Repo into source list
-  apt_repository:
-    repo: 'deb http://packages.elastic.co/elasticsearch/{{ elasticsearch_repo_version }}/debian stable main'
-    state: present
-    update_cache: yes
+- name: Download Elasticsearch
+  get_url:
+    url: "{{ elsDownloadURL }}"
+    dest: /tmp/els.deb
+    checksum: "sha1:{{ elsSHA1 }}"
+  when: elsInstalled.rc != 0
 
 - name: Install Elasticsearch
-  apt: name=elasticsearch state=present update_cache=yes
+  apt: deb=/tmp/els.deb
+  when: elsInstalled.rc != 0
+
+- name: Remove temporary elasticsearch package file
+  file: path=/tmp/els.deb state=absent
+  when: elsInstalled.rc != 0
+
+- name: Change /etc/sysctl.conf
+  blockinfile:
+    dest: /etc/sysctl.conf
+    block: |
+      # hybrid mmapfs / niofs
+      vm.max_map_count=262144
+      # Use RAM and avoid swap
+      vm.swappiness=1
+      # Keepalive settings to avoid disconnects from firewalls
+      # or network latencies
+      net.ipv4.tcp_keepalive_time=600
+      net.ipv4.tcp_keepalive_intvl=60
+      net.ipv4.tcp_keepalive_probes=3
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: restartELS
 
-# - include: plugins.yml
+- name: Install configuration for jvm options
+  template: src=jvm.options.j2 dest=/etc/elasticsearch/jvm.options owner=root group=elasticsearch mode=750
+  notify: restartELS
 
-- name: Change elasticsearch global default setting
-  template: src=elasticsearch-defaults.j2 dest=/etc/default/elasticsearch owner=root group=elasticsearch mode=644
+- name: Create systemd override directory for ELS service
+  file: path=/etc/systemd/system/elasticsearch.service.d state=directory owner=root group=root mode=755
+
+- name: Override elasticsearch systemd configuration
+  template: src=elasticsearchSystemd.conf.j2 dest=/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf owner=root group=elasticsearch mode=644
   notify: restartELS
 
 - name: Install configuration file for els front
   template: src=elasticsearch-front.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "pns-01"
+  when: ansible_hostname ==  "{{ nodeNameFront }}"
 
 - name: Install configuration file for els-1
   template: src=elasticsearch-1.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "pns-02"
+  when: ansible_hostname == "{{ nodeName1 }}"
 
 - name: Install configuration file for els-2
   template: src=elasticsearch-2.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "pns-03"
+  when: ansible_hostname == "{{ nodeName2 }}"
 
 - name: Install configuration file for els-3
   template: src=elasticsearch-3.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml owner=root group=elasticsearch mode=750
   notify: restartELS
-  when: ansible_hostname == "pns-04"
+  when: ansible_hostname == "{{ nodeName3 }}"

@@ -1,0 +1,434 @@
+---
+#TODO: restart services as applicable (notify)
+- name: Ensure unzip is installed
+  apt:
+    name: unzip
+
+- name: Check if Xpack is already installed for elasticsearch
+  command: "{{ elsHome }}/bin/elasticsearch-plugin list"
+  register: xpackInstalledELS
+  changed_when: xpackInstalledELS.rc != 0
+
+- name: Check if Xpack is already installed for kibana
+  command: "{{ kibanaHome }}/bin/kibana-plugin list"
+  register: xpackInstalledKibana
+  changed_when: xpackInstalledKibana.rc != 0
+  when: ansible_hostname == "{{ nodeNameFront }}"
+
+- debug:
+    var: xpackInstalledKibana
+
+- name: Download Xpack
+  get_url:
+    url: "{{ xpackDownloadURL }}"
+    dest: /tmp/xpack.zip
+    checksum: "sha1:{{ xpackSHA1 }}"
+  when: xpackInstalledELS.stdout.find('x-pack') == -1 or ( ansible_hostname == "{{ nodeNameFront }}" and xpackInstalledKibana.stdout.find('x-pack'))
+
+- name: Install Elasticsearch Xpack Plugin
+  command: "{{ elsHome }}/bin/elasticsearch-plugin install -b file:///tmp/xpack.zip"
+  register: xpackElsState
+  failed_when: "'ERROR' in xpackElsState.stdout"
+  changed_when: xpackElsState.rc == 0
+  when: xpackInstalledELS.stdout.find('x-pack') == -1
+  notify: restartELS
+
+- name: Install Kibana Xpack Plugin
+  command: "{{ kibanaHome }}/bin/kibana-plugin install file:///tmp/xpack.zip"
+  register: xpackKibanaState
+  failed_when: "'ERROR' in xpackKibanaState.stdout"
+  changed_when: xpackKibanaState.rc == 0
+  notify: restartKibana
+  when: ansible_hostname == "{{ nodeNameFront }}" and xpackInstalledELS.stdout.find('x-pack') == -1
+
+- name: Remove temporary xpack package file
+  file: path=/tmp/xpack.zip state=absent
+
+- name: Insert/Update Xpack configuration
+  blockinfile:
+    dest: "{{ elsConf }}/elasticsearch.yml"
+    block: |
+      xpack:
+        security:
+          authc:
+            realms:
+              native1:
+                type: native
+                order: 0
+          audit:
+            enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK"
+  notify: restartELS
+
+- name: Verify a system key is present
+  command: "test -e  {{ elsConf }}/x-pack/system_key"
+  register: sysKeyPresent
+  ignore_errors: yes
+  changed_when: sysKeyPresent.rc != 0
+
+- name: Generating system key for message authentication
+  command: "{{ elsHome }}/bin/x-pack/syskeygen"
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
+
+- name: Modifying system key permissions and ownership
+  file:
+    path: "{{ elsConf }}/x-pack/system_key"
+    owner: root
+    group: elasticsearch
+    mode: 0660
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
+
+- name: Fetch system key
+  fetch:
+    src: "{{ elsConf }}/x-pack/system_key"
+    dest: /tmp/system_key
+    flat: yes
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
+
+- name: Remove temporary system key (for fetch)
+  file:
+    path: /tmp/system_key
+    state: absent
+  when: ansible_hostname == "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
+
+- name: Enable message authentication (replicate system key)
+  copy:
+    src: /tmp/system_key
+    dest: "{{ elsConf }}/x-pack/system_key"
+    owner: root
+    group: elasticsearch
+    mode: 0660
+  notify: restartELS
+  when: ansible_hostname != "{{ nodeNameFront }}" and  sysKeyPresent.rc != 0
+
+- name: Check if certificates are already installed
+  command: >
+    test -e /usr/local/share/ca-certificates/xpack/ca.crt
+  register: certInstalled
+  ignore_errors: yes
+  changed_when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Install cert related packages
+  apt:
+    name: ca-certificates
+    update_cache: yes
+    state: present
+  when: certInstalled.rc != 0
+  tags:
+      - cert
+
+- name: Copy certgen input file
+  template: src=certgenInput.yml.j2 dest=/tmp/certgenInput.yml owner=root group=root mode=750
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Create certificates
+  command: >
+    /usr/share/elasticsearch/bin/x-pack/certgen --in /tmp/certgenInput.yml --out /tmp/xpackCerts.zip
+  ignore_errors: yes
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Fetch generated certificates
+  fetch: src=/tmp/xpackCerts.zip dest=/tmp/xpackCerts.zip flat=yes
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Copy certs to hosts
+  copy:
+    src: /tmp/xpackCerts.zip
+    dest: /tmp/xpackCerts.zip
+  when: certInstalled.rc != 0 and ansible_hostname != "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Create CA directory
+  file:
+    path: /usr/local/share/ca-certificates/xpack
+    state: directory
+    owner: root
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Unarchive certificates
+  unarchive:
+    src: /tmp/xpackCerts.zip
+    dest: /tmp
+    remote_src: yes
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Copy CA certificate
+  copy:
+    src: /tmp/ca/ca.crt
+    dest: /usr/local/share/ca-certificates/xpack
+    remote_src: yes
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Update CA certificates
+  command: >
+    update-ca-certificates
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Create node certificate directory for els
+  file:
+    path: /etc/elasticsearch/certificate
+    state: directory
+    owner: root
+    group: elasticsearch
+    mode: 0755
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Copy node certificate
+  copy:
+    src: "{{ item }}"
+    dest: /etc/elasticsearch/certificate
+    remote_src: yes
+  with_items:
+    - "/tmp/{{ nodeNameFront }}/{{ nodeNameFront }}.crt"
+    - "/tmp/{{ nodeNameFront }}/{{ nodeNameFront }}.key"
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Copy node certificate
+  copy:
+    src: "{{ item }}"
+    dest: /etc/elasticsearch/certificate
+    remote_src: yes
+  with_items:
+    - "/tmp/{{ nodeName1 }}/{{ nodeName1 }}.crt"
+    - "/tmp/{{ nodeName1 }}/{{ nodeName1 }}.key"
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeName1 }}"
+  tags:
+    - cert
+
+- name: Copy node certificate
+  copy:
+    src: "{{ item }}"
+    dest: /etc/elasticsearch/certificate
+    remote_src: yes
+  with_items:
+    - "/tmp/{{ nodeName2 }}/{{ nodeName2 }}.crt"
+    - "/tmp/{{ nodeName2 }}/{{ nodeName2 }}.key"
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeName2 }}"
+  tags:
+    - cert
+
+- name: Copy node certificate
+  copy:
+    src: "{{ item }}"
+    dest: /etc/elasticsearch/certificate
+    remote_src: yes
+  with_items:
+    - "/tmp/{{ nodeName3 }}/{{ nodeName3 }}.crt"
+    - "/tmp/{{ nodeName3 }}/{{ nodeName3 }}.key"
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeName3 }}"
+  tags:
+    - cert
+
+- name: Copy CA certificate to readable location for els
+  copy:
+    src: /usr/local/share/ca-certificates/xpack/ca.crt
+    dest: /etc/elasticsearch/certificate/ca.crt
+    remote_src: yes
+  when: certInstalled.rc != 0
+  tags:
+    - cert
+
+- name: Insert/Update Xpack SSL configuration
+  blockinfile:
+    dest: "{{ elsConf }}/elasticsearch.yml"
+    block: |
+      xpack.ssl.key: "/etc/elasticsearch/certificate/{{ nodeNameFront }}.key"
+      xpack.ssl.certificate: "/etc/elasticsearch/certificate/{{ nodeNameFront }}.crt"
+      xpack.ssl.certificate_authorities: /etc/elasticsearch/certificate/ca.crt
+
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.http.ssl.enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK - SSL"
+  notify: restartELS
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Insert/Update Xpack SSL configuration
+  blockinfile:
+    dest: "{{ elsConf }}/elasticsearch.yml"
+    block: |
+      xpack.ssl.key: "/etc/elasticsearch/certificate/{{ nodeName1 }}.key"
+      xpack.ssl.certificate: "/etc/elasticsearch/certificate/{{ nodeName1 }}.crt"
+      xpack.ssl.certificate_authorities: /etc/elasticsearch/certificate/ca.crt
+
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.http.ssl.enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK - SSL"
+  notify: restartELS
+  when: ansible_hostname == "{{ nodeName1 }}"
+  tags:
+    - cert
+
+- name: Insert/Update Xpack SSL configuration
+  blockinfile:
+    dest: "{{ elsConf }}/elasticsearch.yml"
+    block: |
+      xpack.ssl.key: "/etc/elasticsearch/certificate/{{ nodeName2 }}.key"
+      xpack.ssl.certificate: "/etc/elasticsearch/certificate/{{ nodeName2 }}.crt"
+      xpack.ssl.certificate_authorities: /etc/elasticsearch/certificate/ca.crt
+
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.http.ssl.enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK - SSL"
+  notify: restartELS
+  when: ansible_hostname == "{{ nodeName2 }}"
+  tags:
+    - cert
+
+- name: Insert/Update Xpack SSL configuration
+  blockinfile:
+    dest: "{{ elsConf }}/elasticsearch.yml"
+    block: |
+      xpack.ssl.key: "/etc/elasticsearch/certificate/{{ nodeName3 }}.key"
+      xpack.ssl.certificate: "/etc/elasticsearch/certificate/{{ nodeName3 }}.crt"
+      xpack.ssl.certificate_authorities: /etc/elasticsearch/certificate/ca.crt
+
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.http.ssl.enabled: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK - SSL"
+  notify: restartELS
+  when: ansible_hostname == "{{ nodeName3 }}"
+  tags:
+    - cert
+
+- name: Create node certificate directory for kibana
+  file:
+    path: /etc/kibana/certificate
+    state: directory
+    owner: root
+    mode: 0755
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Copy CA certificate to readable location for kibana
+  copy:
+    src: /usr/local/share/ca-certificates/xpack/ca.crt
+    dest: /etc/kibana/certificate/ca.crt
+    remote_src: yes
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Copy SSL certificate to readable location for kibana
+  copy:
+    src: "{{ item }}"
+    dest: /etc/kibana/certificate
+    remote_src: yes
+  with_items:
+    - "/etc/elasticsearch/certificate/{{ nodeNameFront }}.crt"
+    - "/etc/elasticsearch/certificate/{{ nodeNameFront }}.key"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  tags:
+    - cert
+
+- name: Set CA for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^elasticsearch\.ssl\.ca:'
+    insertafter: '^#elasticsearch\.ssl\.ca:'
+    line: "elasticsearch.ssl.ca: {{ kibanaConf }}/certificate/ca.crt"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+- name: Switch els URL to https for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^elasticsearch\.url:'
+    insertafter: '^#elasticsearch\.url:'
+    line: "elasticsearch.url: https://{{ nodeNameFront }}:9200"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+- name: Set elasticsearch certificate config for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^elasticsearch\.ssl\.cert:'
+    insertafter: '^#elasticsearch\.ssl\.cert:'
+    line: "elasticsearch.ssl.cert: {{ kibanaConf }}/certificate/{{ nodeNameFront }}.crt"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+- name: Set elasticsearch key config for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^elasticsearch\.ssl\.key:'
+    insertafter: '^#elasticsearch\.ssl\.key:'
+    line: "elasticsearch.ssl.key: {{ kibanaConf }}/certificate/{{ nodeNameFront }}.key"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+- name: Set SSL config for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^server\.ssl\.cert:'
+    insertafter: '^#server\.ssl\.cert:'
+    line: "server.ssl.cert: {{ kibanaConf }}/certificate/{{ nodeNameFront }}.crt"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+- name: Set SSL config for kibana
+  lineinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    regexp: '^server\.ssl\.key:'
+    insertafter: '^#server\.ssl\.key:'
+    line: "server.ssl.key: {{ kibanaConf }}/certificate/{{ nodeNameFront }}.key"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+#https://github.com/elastic/kibana/issues/7128
+- name: Insert/Update Xpack SSL configuration for kibana (+console)
+  blockinfile:
+    dest: "{{ kibanaConf }}/kibana.yml"
+    block: |
+      xpack.security.encryptionKey: "sdqnfkjqhfuavzkyulifhajgzrn,bnqhjvyekrghfknjq:dbskvfghjkuyt"
+      xpack.reporting.encryptionKey: "zehlygzezQSF+EGZERzDSFqioazoijfgerbvEZFGERHRTE4324TGFDSDFG"
+
+      console.proxyConfig:
+        - match:
+            host: "{{ nodeNameFront }}"
+            port: "9200"
+
+          ssl:
+            ca: "{{ kibanaConf }}/certificate/ca.crt"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR XPACK - SSL"
+  when: ansible_hostname == "{{ nodeNameFront }}"
+  notify: restartKibana
+  tags:
+    - cert
+
+

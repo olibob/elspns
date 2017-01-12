@@ -1,20 +1,27 @@
----
-# tasks file for kibana
-- name: Import Elastic GPG Key
-  apt_key: url=http://packages.elastic.co/GPG-KEY-elasticsearch state=present
+--- # tasks file for kibana
+- name: Check if Kibana is allready installed
+  command: >
+    test -e /etc/kibana/kibana.yml
+  register: kibanaInstalled
+  ignore_errors: yes
+  changed_when: kibanaInstalled.rc != 0
 
-- name: Add Kibana Repo into source list
-  apt_repository:
-    repo: 'deb https://packages.elastic.co/kibana/{{ kibana_repo_version }}/debian stable main'
-    state: present
-    update_cache: yes
+- name: Download Kibana
+  get_url:
+    url: "{{ kibanaDownloadURL }}"
+    dest: /tmp/kibana.deb
+    checksum: "sha1:{{ kibanaSHA1 }}"
+  when:  kibanaInstalled.rc != 0
 
 - name: Install Kibana
-  apt: name=kibana state=present update_cache=yes
+  apt: deb=/tmp/kibana.deb
   notify: restartKibana
+  when:  kibanaInstalled.rc != 0
 
-- include: plugins.yml
+- name: Remove temporary kibana package file
+  file: path=/tmp/kibana.deb state=absent
+  when:  kibanaInstalled.rc != 0
 
-- name: Install configuration file for kibana
-  template: src=kibana.yml.j2 dest=/opt/kibana/config/kibana.yml owner=root group=root mode=664
+- name: Install configuration
+  template: src=kibana.yml.j2 dest=/etc/kibana/kibana.yml owner=root group=root mode=644
   notify: restartKibana
