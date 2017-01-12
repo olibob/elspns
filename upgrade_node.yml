@@ -1,20 +1,15 @@
 --- # Elasticsearch Upgrade Node
-- hosts: pns-01
+- hosts: <nodename>
   vars:
     elsDownloadURL: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.1.1.deb
     elsSHA1: f2fdf6d2bdd6e526c5be53f859c4dd111677a4b6
   become: true
   become_user: root
   become_method: sudo
-  # environment:
-  #   http_proxy: http://10.13.4.50:3128
-  #   https_proxy: http://10.13.4.50:3128
+  environment:
+    http_proxy: http://10.13.4.50:3128
+    https_proxy: http://10.13.4.50:3128
   tasks:
-  - name: Stop els Node
-    service:
-      name: elasticsearch
-      state: stopped
-
   - name: Download Elasticsearch
     get_url:
       url: "{{ elsDownloadURL }}"
@@ -26,11 +21,3 @@
 
   - name: Remove temporary elasticsearch package file
     file: path=/tmp/els.deb state=absent
-
-  # Insert plugin upgrade if necessary
-
-  - name: Restart els Node
-    service:
-      name: elasticsearch
-      state: restarted
-      enabled: yes

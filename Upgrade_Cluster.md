@@ -4,13 +4,11 @@ Reference: [https://www.elastic.co/guide/en/elasticsearch/reference/current/roll
 
 ## Prerequisites:
 
-Stop kibana.
-
-```
-ansible -i lpns elastic -s -m shell -a 'systemctl stop kibana'
-```
+It is assumed you are following the guide for a rolling upgrade.
 
 ## Sequence
+
+Replace `localhost` and add credentials according to your setup.
 
 1/ Disable shard allocation
 
@@ -31,6 +29,8 @@ curl -XPOST 'localhost:9200/_flush/synced?pretty'
 ```
 
 3/ run upgrade playbook
+
+`IMPORTANT`: This a basic upgrade that does not consider plugins at this stage.
 
 4/ Check node is back in the cluster
 
