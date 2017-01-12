@@ -1,5 +1,9 @@
 ---
 #TODO: restart services as applicable (notify)
+- name: Ensure unzip is installed
+  apt:
+    name: unzip
+
 - name: Check if Xpack is already installed for elasticsearch
   command: "{{ elsHome }}/bin/elasticsearch-plugin list"
   register: xpackInstalledELS
@@ -99,7 +103,7 @@
 
 - name: Check if certificates are already installed
   command: >
-    test -e //usr/local/share/ca-certificates/xpack/ca.crt
+    test -e /usr/local/share/ca-certificates/xpack/ca.crt
   register: certInstalled
   ignore_errors: yes
   changed_when: certInstalled.rc != 0
@@ -315,7 +319,7 @@
     state: directory
     owner: root
     mode: 0755
-  when: certInstalled.rc != 0
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
   tags:
     - cert
 
@@ -324,7 +328,7 @@
     src: /usr/local/share/ca-certificates/xpack/ca.crt
     dest: /etc/kibana/certificate/ca.crt
     remote_src: yes
-  when: certInstalled.rc != 0
+  when: certInstalled.rc != 0 and ansible_hostname == "{{ nodeNameFront }}"
   tags:
     - cert
 
@@ -351,7 +355,7 @@
   tags:
     - cert
 
-- name: Swithc els URL to https for kibana
+- name: Switch els URL to https for kibana
   lineinfile:
     dest: "{{ kibanaConf }}/kibana.yml"
     regexp: '^elasticsearch\.url:'
